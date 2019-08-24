@@ -6,3 +6,9 @@
 
 #pyCharm stuff
 .idea/
+
+# Python env
+venv
+
+# Data set
+data_set
