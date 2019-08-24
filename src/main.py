@@ -1,5 +1,8 @@
 import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator
+from keras.models import Sequential
+from keras import layers
+from keras.optimizers import SGD
 
 train_data_dir = "../data_set/train"
 # Load csv file
@@ -73,3 +76,73 @@ validation_generator = image_gen.flow_from_dataframe(whole_set_csv,
                                                      interpolation='nearest',
                                                      drop_duplicates=True
                                                      )
+
+# Building a model
+model = Sequential()
+
+# For CNN networks firstly add convolution layer, layer which takes input features. But instead of taking pixel by
+# pixel it takes matrixes of pixels that are near each other and applies to them some filter that can provide some
+# attributes to show clearly (etc. edges, blurriness...)
+
+
+# 1st part of convolution
+# Conv2D is layer that takes 2D arrays (images)
+model.add(layers.Conv2D(filters=32,  # Dimensionality of the output space, at start it was 3 (color formats)
+                        kernel_size=(3, 3),  # Dimensionality of conv window that is being looked and filtered
+                        input_shape=(64, 64, 3),  # Size and color format of input
+                        activation='relu'  # Activation function that puts 0 on all negative values and linear for other
+                        )
+          )
+
+# Layers that reduce number of parameters when images are too large.
+model.add(layers.MaxPooling2D(pool_size=(2, 2),  # 2 integers, factors by which to downscale (vertical, horizontal)
+                              padding='same'  # Adds some zeros as padding if image is not right size
+                              )
+          )
+
+# To prevent overfitting dropout layer is add which at same rate randomly sets input to 0
+model.add(layers.Dropout(0.25  # Dropout rate
+                         )
+          )
+
+
+# 2nd part of convolution
+model.add(layers.Conv2D(filters=64, kernel_size=(3, 3), activation='relu'))
+model.add(layers.MaxPooling2D(pool_size=(2, 2), padding='same'))
+model.add(layers.Dropout(0.25))
+
+# 3rd part of convolution
+model.add(layers.Conv2D(filters=128, kernel_size=(3, 3), activation='relu'))
+model.add(layers.MaxPooling2D(pool_size=(2, 2), padding='same'))
+model.add(layers.Dropout(0.25))
+
+# Flattens input to 1D
+model.add(layers.Flatten())
+# Creates hidden, highly connected, layer
+model.add(layers.Dense(128,  # Number of neurons in hidden layer
+                       activation='relu'  # Activation function that puts 0 on all negative values and linear for other
+                       )
+          )
+# Creates output layer
+model.add(layers.Dense(1,  # Output layer has 1 neuron
+                       activation='softmax'  # Activation function that returns array of probabilities, is or is not
+                       )
+          )
+
+
+# Compiling the model
+
+# Optimizers are algorithms that provide how will weights be changed in training of model.
+# Stochastic Gradient Descent - algorithm that is used for finding minimum of function with derivative of function
+# and looking at its slope. (Closer to minimum, slope is closer to 0). Every weight has same learning rate (value that
+# is multiplied in formula for weight changing when minimum of function has not been found).
+optimizer = SGD(lr=0.01,  # Learning rate
+                momentum=0.0,
+                decay=0.0,
+                nesterov=False
+                )
+
+model.compile(optimizer=optimizer,  # Optimizer
+              loss='mean_squared_error',  # Loss function
+              metrics=['accuracy']  # Metrics to be used in calculating how good model is trained
+              )
