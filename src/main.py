@@ -2,7 +2,9 @@ import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras import layers
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
+from keras.callbacks import ModelCheckpoint
+import matplotlib.pyplot as plt
 
 train_data_dir = "../data_set/train"
 # Load csv file
@@ -12,6 +14,12 @@ whole_set_csv.has_cactus = whole_set_csv.has_cactus.astype(str)
 
 # Size of batches of images
 BATCH_SIZE = 128
+
+# File path for model checkpoints
+MODEL_PATH = "model_checkpoint.hdf5"
+
+# Number of max epochs in model training
+MAX_EPO = 30
 
 # Create image preprocessor, that can do augmentation on images (this can help with accuracy of end nn)
 image_gen = ImageDataGenerator(featurewise_center=False,
@@ -116,6 +124,11 @@ model.add(layers.Conv2D(filters=128, kernel_size=(3, 3), activation='relu'))
 model.add(layers.MaxPooling2D(pool_size=(2, 2), padding='same'))
 model.add(layers.Dropout(0.25))
 
+# 4th part of convolution
+model.add(layers.Conv2D(filters=256, kernel_size=(3, 3), activation='relu'))
+model.add(layers.MaxPooling2D(pool_size=(2, 2), padding='same'))
+model.add(layers.Dropout(0.25))
+
 # Flattens input to 1D
 model.add(layers.Flatten())
 # Creates hidden, highly connected, layer
@@ -136,13 +149,43 @@ model.add(layers.Dense(1,  # Output layer has 1 neuron
 # Stochastic Gradient Descent - algorithm that is used for finding minimum of function with derivative of function
 # and looking at its slope. (Closer to minimum, slope is closer to 0). Every weight has same learning rate (value that
 # is multiplied in formula for weight changing when minimum of function has not been found).
-optimizer = SGD(lr=0.01,  # Learning rate
+optimizer = SGD(lr=0.001,  # Learning rate
                 momentum=0.0,
                 decay=0.0,
                 nesterov=False
                 )
 
+
 model.compile(optimizer=optimizer,  # Optimizer
               loss='mean_squared_error',  # Loss function
               metrics=['accuracy']  # Metrics to be used in calculating how good model is trained
               )
+
+
+# Model will be trained in epochs, model with best accuracy or reduced loss will be used for test.
+# That's the reason why checkpoints will be used.
+checkpoint = ModelCheckpoint(MODEL_PATH,
+                             monitor='val_acc',  # Quantity to monitor.
+                             verbose=1,
+                             save_best_only=True,  # Best model according to the quantity monitored will be saved.
+                             mode='max'  # How to look at quantity to monitor, which is the best.
+                             )
+callbacks_list = [checkpoint]
+
+
+# Train model
+history = model.fit_generator(
+    train_generator,
+    steps_per_epoch=50,  # One step is one batch processed from train generator
+    epochs=MAX_EPO,
+    validation_data=validation_generator,
+    callbacks=callbacks_list,
+    validation_steps=30.  # One step is one batch processed from validation generator
+)
+
+# Plot accuracy of validation per epochs
+val_acc = history.history['val_acc']
+epochs = range(1, len(val_acc) + 1)
+plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
+plt.legend()
+plt.show()
