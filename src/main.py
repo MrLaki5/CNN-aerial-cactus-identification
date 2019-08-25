@@ -2,7 +2,7 @@ import pandas as pd
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras import layers
-from keras.optimizers import SGD, Adam
+from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 import os
@@ -94,13 +94,7 @@ def create_model():
     # and looking at its slope. (Closer to minimum, slope is closer to 0). Every weight has same
     # learning rate (value that is multiplied in formula for weight changing when minimum of
     # function has not been found).
-    optimizer = SGD(lr=0.09,  # Learning rate
-                    momentum=0.0,
-                    decay=0.0,
-                    nesterov=False
-                    )
-
-    # optim = Adam(lr=0.0022, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+    optimizer = Adam(lr=0.0022, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
 
     model.compile(optimizer=optimizer,  # Optimizer
                   loss='binary_crossentropy',  # Loss function
